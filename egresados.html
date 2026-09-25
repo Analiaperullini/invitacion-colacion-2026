@@ -537,6 +537,7 @@ h1{
 
     <div class="btns">
       <a class="btn btn-primary" href="#acto">VER INVITACIÓN</a>
+      <a class="btn btn-outline" href="#confirmar">CONFIRMAR ASISTENCIA</a>
     </div>
   </div>
   <div class="scroll">Deslizá para continuar ↓</div>
@@ -546,13 +547,13 @@ h1{
   <div class="container">
     <div class="section-title reveal">
       <div class="small">Una jornada especial</div>
-      <h2>INVITA A USTED/ES</h2>
+      <h2>Estimados/as Egresados/as</h2>
     </div>
 
     <div class="card invitation-text reveal">
       <p>
         El <strong>Equipo Directivo del Instituto Técnico Superior del Colegio de Técnicos de Jujuy</strong>
-        tiene el agrado de recibirlos en su <strong>Acto de Colación 2026</strong>,
+        tiene el honor de invitarlos a su <strong>Acto de Colación 2026</strong>,
         donde celebraremos juntos el inicio de esta nueva etapa.
       </p>
       <br>
@@ -623,6 +624,56 @@ h1{
   </div>
 </section>
 
+<section class="section" id="importante">
+  <div class="container">
+    <div class="section-title reveal">
+      <div class="small">Antes de asistir</div>
+      <h2>Información importante</h2>
+    </div>
+
+    <div class="notice reveal">
+      <p>
+        <b>La asistencia del egresado y el ingreso de hasta 2 acompañantes
+        deben ser confirmados previamente.</b>
+      </p>
+      <br>
+      <p>
+        El registro estará habilitado hasta el <b>jueves 8 de octubre de 2026</b>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="confirmar">
+  <div class="container">
+    <div class="section-title reveal">
+      <div class="small">Tu presencia es importante</div>
+      <h2>Confirmá tu asistencia</h2>
+    </div>
+
+    <div class="confirm card reveal">
+      <p>
+        Confirmá tu asistencia y registrá a tus acompañantes mediante el formulario
+        de inscripción.
+      </p>
+
+      <!-- Reemplazar SOLO la URL del href por la URL real del formulario -->
+      <a id="formButton"
+         class="btn btn-primary"
+         href="https://forms.gle/pkBmFQSL9WtusWHT7"
+         target="_blank"
+         rel="noopener noreferrer"
+         onclick="openForm(event)">
+         ✅ CONFIRMAR ASISTENCIA
+      </a>
+
+      <p id="formMessage" style="display:none;margin-top:18px;color:var(--gold-light);font-size:.85rem">
+        Cuando tengas el enlace del formulario, reemplazá la URL indicada en el código.
+      </p>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <footer class="footer">
@@ -669,7 +720,43 @@ const observer = new IntersectionObserver(entries=>{
 
 document.querySelectorAll(".reveal").forEach(el=>observer.observe(el));
 
+/* ===== BOTÓN DEL FORMULARIO =====
+   Pegá aquí la URL real de Google Forms cuando la tengas.
+*/
+const FORM_URL = "https://forms.gle/pkBmFQSL9WtusWHT7";
 
+function openForm(event){
+  event.preventDefault();
+
+  if(FORM_URL.trim()){
+    window.open(FORM_URL, "_blank", "noopener,noreferrer");
+  }else{
+    document.getElementById("formMessage").style.display = "block";
+  }
+}
+
+/* ===== CONFETI SUAVE AL LLEGAR AL CIERRE ===== */
+let confettiDone = false;
+const confirmSection = document.getElementById("confirmar");
+
+const confettiObserver = new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting && !confettiDone){
+    confettiDone = true;
+
+    for(let i=0;i<45;i++){
+      const piece = document.createElement("span");
+      piece.className = "confetti";
+      piece.style.left = Math.random()*100 + "vw";
+      piece.style.animationDelay = Math.random()*1.2 + "s";
+      piece.style.transform = `rotate(${Math.random()*360}deg)`;
+      document.body.appendChild(piece);
+
+      setTimeout(()=>piece.remove(),5000);
+    }
+  }
+},{threshold:.25});
+
+confettiObserver.observe(confirmSection);
 </script>
 
 </body>
