@@ -546,6 +546,7 @@ h1{
   background:var(--gold-light);
   transform:rotate(-45deg);
 }
+.yt-music{position:fixed;left:-9999px;top:0;width:200px;height:200px;overflow:hidden;pointer-events:none}
 @keyframes musicPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,164,92,.45)}50%{box-shadow:0 0 0 10px rgba(201,164,92,0)}}
 </style>
 </head>
@@ -723,8 +724,9 @@ h1{
   <p style="margin-top:22px;font-size:.72rem">Acto de Colación · 2026</p>
 </footer>
 
+<div class="yt-music" aria-hidden="true"><div id="ytMusic"></div></div>
 <audio id="bgMusic" src="musica.mp3" loop preload="none"></audio>
-<button id="musicBtn" class="music-btn" type="button" aria-label="Reproducir música" hidden>🎵</button>
+<button id="musicBtn" class="music-btn" type="button" aria-label="Reproducir música">🎵</button>
 
 <script>
 /* ===== CUENTA REGRESIVA ===== */
@@ -802,46 +804,102 @@ const confettiObserver = new IntersectionObserver(entries=>{
 
 confettiObserver.observe(confirmSection);
 /* ===== MÚSICA =====
-   Arranca con el primer toque en la página (los navegadores no permiten
-   sonido automático) y el botón 🎵 la pausa o la vuelve a reproducir.
+   Suena la canción de YouTube indicada abajo. Si YouTube no carga,
+   se usa musica.mp3 como respaldo. Arranca con el primer toque en la
+   página (los navegadores no permiten sonido automático) y el botón 🎵
+   la pausa o la vuelve a reproducir.
 */
-const music = document.getElementById("bgMusic");
+const MUSIC_YOUTUBE_ID = "V_WZCkt6C10"; // Aprender a Volar - Patricia Sosa
+const MUSIC_START_SECOND = 0;           // segundo del video en que arranca
+
 const musicBtn = document.getElementById("musicBtn");
+const fallbackAudio = document.getElementById("bgMusic");
+let ytPlayer = null;
+let ytReady = false;
+let useFallback = false;
+let wantMusic = false;
 let musicPausedByUser = false;
-music.volume = 0.5;
+fallbackAudio.volume = 0.5;
 
 function setMusicState(playing){
   musicBtn.classList.toggle("playing", playing);
   musicBtn.setAttribute("aria-label", playing ? "Pausar música" : "Reproducir música");
 }
 
-function playMusic(){
-  music.play().then(() => setMusicState(true)).catch(() => setMusicState(false));
+function switchToFallback(){
+  if(useFallback) return;
+  useFallback = true;
+  if(ytPlayer && ytReady) ytPlayer.stopVideo();
+  if(wantMusic && !musicPausedByUser) playMusic();
 }
+
+function playMusic(){
+  wantMusic = true;
+  if(useFallback){
+    fallbackAudio.play().catch(() => setMusicState(false));
+  }else if(ytReady){
+    ytPlayer.playVideo();
+  }
+}
+
+function pauseMusic(){
+  wantMusic = false;
+  if(useFallback) fallbackAudio.pause();
+  else if(ytReady) ytPlayer.pauseVideo();
+  setMusicState(false);
+}
+
+fallbackAudio.addEventListener("play", () => setMusicState(true));
+fallbackAudio.addEventListener("pause", () => setMusicState(false));
+
+window.onYouTubeIframeAPIReady = function(){
+  ytPlayer = new YT.Player("ytMusic", {
+    width: 200,
+    height: 200,
+    videoId: MUSIC_YOUTUBE_ID,
+    playerVars: { start: MUSIC_START_SECOND, playsinline: 1, controls: 0, disablekb: 1, rel: 0 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        ytPlayer.setVolume(50);
+        if(wantMusic && !useFallback) ytPlayer.playVideo();
+      },
+      onStateChange: event => {
+        if(useFallback) return;
+        if(event.data === YT.PlayerState.PLAYING) setMusicState(true);
+        else if(event.data === YT.PlayerState.PAUSED) setMusicState(false);
+        else if(event.data === YT.PlayerState.ENDED){
+          ytPlayer.seekTo(MUSIC_START_SECOND);
+          ytPlayer.playVideo();
+        }
+      },
+      onError: switchToFallback
+    }
+  });
+};
+
+const ytScript = document.createElement("script");
+ytScript.src = "https://www.youtube.com/iframe_api";
+ytScript.onerror = switchToFallback;
+document.head.appendChild(ytScript);
+setTimeout(() => { if(!ytReady) switchToFallback(); }, 10000);
 
 musicBtn.addEventListener("click", event => {
   event.stopPropagation();
-  if(music.paused){
+  if(musicBtn.classList.contains("playing")){
+    musicPausedByUser = true;
+    pauseMusic();
+  }else{
     musicPausedByUser = false;
     playMusic();
-  }else{
-    musicPausedByUser = true;
-    music.pause();
-    setMusicState(false);
   }
 });
 
 function startMusicOnFirstTap(){
   document.removeEventListener("click", startMusicOnFirstTap);
-  if(!musicPausedByUser && music.paused) playMusic();
+  if(!musicPausedByUser) playMusic();
 }
 document.addEventListener("click", startMusicOnFirstTap);
-
-/* Si falta el archivo de música, el botón no se muestra */
-fetch(music.src, { method: "HEAD" })
-  .then(res => { if(res.ok) musicBtn.hidden = false; })
-  .catch(() => { musicBtn.hidden = false; });
-music.addEventListener("error", () => { musicBtn.hidden = true; });
 </script>
 
 </body>
