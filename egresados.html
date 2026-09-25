@@ -514,6 +514,39 @@ h1{
   }
 }
 
+/* ===== MÚSICA ===== */
+.music-btn{
+  position:fixed;
+  right:18px;
+  bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index:40;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  border:1px solid rgba(201,164,92,.55);
+  background:rgba(11,31,58,.88);
+  backdrop-filter:blur(10px);
+  color:var(--gold-light);
+  font-size:1.35rem;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .2s;
+}
+.music-btn:hover{transform:scale(1.06)}
+.music-btn.playing{animation:musicPulse 1.8s ease-in-out infinite}
+.music-btn:not(.playing)::after{
+  content:"";
+  position:absolute;
+  width:60%;
+  height:2px;
+  background:var(--gold-light);
+  transform:rotate(-45deg);
+}
+@keyframes musicPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,164,92,.45)}50%{box-shadow:0 0 0 10px rgba(201,164,92,0)}}
 </style>
 </head>
 
@@ -690,6 +723,9 @@ h1{
   <p style="margin-top:22px;font-size:.72rem">Acto de Colación · 2026</p>
 </footer>
 
+<audio id="bgMusic" src="musica.mp3" loop preload="none"></audio>
+<button id="musicBtn" class="music-btn" type="button" aria-label="Reproducir música" hidden>🎵</button>
+
 <script>
 /* ===== CUENTA REGRESIVA ===== */
 const eventDate = new Date("2026-10-09T16:00:00-03:00").getTime();
@@ -765,6 +801,47 @@ const confettiObserver = new IntersectionObserver(entries=>{
 },{threshold:.25});
 
 confettiObserver.observe(confirmSection);
+/* ===== MÚSICA =====
+   Arranca con el primer toque en la página (los navegadores no permiten
+   sonido automático) y el botón 🎵 la pausa o la vuelve a reproducir.
+*/
+const music = document.getElementById("bgMusic");
+const musicBtn = document.getElementById("musicBtn");
+let musicPausedByUser = false;
+music.volume = 0.5;
+
+function setMusicState(playing){
+  musicBtn.classList.toggle("playing", playing);
+  musicBtn.setAttribute("aria-label", playing ? "Pausar música" : "Reproducir música");
+}
+
+function playMusic(){
+  music.play().then(() => setMusicState(true)).catch(() => setMusicState(false));
+}
+
+musicBtn.addEventListener("click", event => {
+  event.stopPropagation();
+  if(music.paused){
+    musicPausedByUser = false;
+    playMusic();
+  }else{
+    musicPausedByUser = true;
+    music.pause();
+    setMusicState(false);
+  }
+});
+
+function startMusicOnFirstTap(){
+  document.removeEventListener("click", startMusicOnFirstTap);
+  if(!musicPausedByUser && music.paused) playMusic();
+}
+document.addEventListener("click", startMusicOnFirstTap);
+
+/* Si falta el archivo de música, el botón no se muestra */
+fetch(music.src, { method: "HEAD" })
+  .then(res => { if(res.ok) musicBtn.hidden = false; })
+  .catch(() => { musicBtn.hidden = false; });
+music.addEventListener("error", () => { musicBtn.hidden = true; });
 </script>
 
 </body>
